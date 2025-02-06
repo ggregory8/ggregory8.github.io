@@ -1,0 +1,344 @@
+openapi: 3.0.3
+info:
+  title: Drone C2 API
+  description: |-
+    This API provides access for command and control of a UAV (drone). 
+
+    Basic functions include:
+    - Status
+      - UAV status
+      - Control status
+    - Commands
+      - Arm andTakeoff
+      - RTL
+      - Land
+      - Fly to waypoint
+      - Set altitude
+  version: 0.1.0
+servers:
+  - url: http://server-address:port
+tags:
+  - name: status
+    description: Retrieve status of the system
+  - name: cmd
+    description: Commands to control UAV
+paths:
+  /status/uav:
+    get:
+      tags:
+        - status
+      summary: Get UAV Status
+      description: Get the current status/state of the UAV
+      operationId: statusUav
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatusUav'          
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  /status/control:
+    get:
+      tags:
+        - status
+      summary: Get UAV Control Status
+      description: Get the current status/state of the UAV control system
+      operationId: statusControl
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatusControl'          
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  /cmd/atof:
+    get:
+      tags:
+        - cmd
+      summary: Send Arm and Take-off Command
+      description: Send command to the UAV to arm and takeoff. This also handles opening the truck bed cover if required.
+      operationId: cmdAtof
+      parameters:
+        - name: alt
+          in: query
+          description: Altitude to takeoff to (m)
+          required: true
+          schema:
+            type: number
+            example: 25.5
+      responses:
+        '200':
+          $ref: '#/components/responses/CmdResponseSuccess'
+        '400':
+          description: Missing parameter
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    success:
+                      type: boolean
+                      example: false
+                    description:
+                      type: string
+                      example: Argument alt is required
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  /cmd/rtl:
+    get:
+      tags:
+        - cmd
+      summary: Send RTL Command
+      description: Send the RTL command to the UAV
+      operationId: cmdRtl
+      responses:
+        '200':
+          $ref: '#/components/responses/CmdResponseSuccess'
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  /cmd/land:
+    get:
+      tags:
+        - cmd
+      summary: Send Land Command
+      description: Send the Land command to the UAV
+      operationId: cmdLand
+      responses:
+        '200':
+          $ref: '#/components/responses/CmdResponseSuccess'
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  
+  /cmd/alt_change:
+    get:
+      tags:
+        - cmd
+      summary: Send Altitude Change Command
+      description: Send a new default altitude to the UAV.
+      operationId: cmdAltChange
+      parameters:
+        - name: alt
+          in: query
+          description: Default flight altitude (m)
+          required: true
+          schema:
+            type: number
+            example: 30.0
+      responses:
+        '200':
+          $ref: '#/components/responses/CmdResponseSuccess'
+        '400':
+          description: Missing parameter
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    success:
+                      type: boolean
+                      example: false
+                    description:
+                      type: string
+                      example: Argument alt is required
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+  # http://3.91.74.146:5001/cmd/flyto?lat=39.4184965974883&lon=-76.61406296004657&alt=7
+  # {"description":"Goto command success","success":true}
+  /cmd/flyto:
+    get:
+      tags:
+        - cmd
+      summary: Send Flyto Command
+      description: Send location cooridinates to the UAV to fly to.
+      operationId: cmdFlyto
+      parameters:
+        - name: lat
+          in: query
+          description: Latitude coordinate of location to fly to (decimal degrees)
+          required: true
+          schema:
+            type: number
+            example: 37.4184965974883
+        - name: lon
+          in: query
+          description: Longitude coordinate of location to fly to (decimal degrees)
+          required: true
+          schema:
+            type: number
+            example: -86.61406296004657
+        - name: alt
+          in: query
+          description: Altitude to takeoff to (m)
+          required: true
+          schema:
+            type: number
+            example: 25.5
+      responses:
+        '200':
+          $ref: '#/components/responses/CmdResponseSuccess'
+        '400':
+          description: Missing parameter
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    success:
+                      type: boolean
+                      example: false
+                    description:
+                      type: string
+                      example: Argument alt is required
+        '405':
+          $ref: '#/components/responses/CmdResponseError'
+
+components:
+  schemas:
+    ApiResponseSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        description:
+          type: string
+          example: Success description
+    ApiResponseError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        description:
+          type: string
+          example: UAV not connected
+    StatusUav:
+      required:
+        - lat
+        - lon
+        - alt
+      type: object
+      properties:
+        name:
+          type: string
+          example: sitl
+        lat:
+          type: number
+        lon:
+          type: number
+        alt:
+          type: number
+        alt_abs:
+          type: number
+        roll:
+          type: number
+        pitch:
+          type: number
+        yaw:
+          type: number
+        connected:
+          type: boolean
+        flight_mode:
+          type: number
+        armed:
+          type: boolean
+        arming:
+          type: boolean
+        battery:
+          type: number
+        gps_cog:
+          type: number
+        gps_fix_type:
+          type: number
+        gps_hdop:
+          type: number
+        gps_num_sats:
+          type: number
+        gps_vdop:
+          type: number
+        gps_vel:
+          type: number
+        
+    StatusControl:
+      required:
+        - base_platform
+        - control_mode
+        - orientation_mode
+        - default_alt
+      type: object
+      properties:
+        base_platform:
+          $ref: '#/components/schemas/base_platform'
+        control_mode:
+          type: string
+          description: UAV control type
+          enum:
+            - guided
+            - taglock
+            - brake
+        orientation_mode:
+          type: string
+          description: UAV control type
+          enum:
+            - free
+            - north
+            - gcs
+        default_alt:
+          type: integer
+          format: float
+          example: 30.0
+        last_heartbeat:
+          type: integer
+          description: Time of last heartbeat from UAV
+          format: uint64
+          example: 1738806799429
+        uav_conn:
+          type: string
+          example: tcp:127.0.0.1:5760
+    base_platform:
+      type: object
+      properties:
+        truck_bed_closed_state:
+          type: boolean
+          example: true
+        truck_bed_closing_state:
+          type: boolean
+          example: false
+        truck_bed_opened_state:
+          type: boolean
+          example: false
+        truck_bed_opening_state:
+          type: boolean
+          example: false
+  responses:
+    CmdResponseSuccess:
+      description: Command was successful
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ApiResponseSuccess'
+
+    CmdResponseError:
+      description: Command failed
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ApiResponseError'
